@@ -11,9 +11,11 @@ const defaultState = {
 };
 
 const state = loadState();
+let busquedaAlumno = "";
 
 const tabs = document.querySelectorAll(".tab-btn");
 const sections = document.querySelectorAll(".tab");
+const searchInput = document.getElementById("buscar-alumno");
 
 tabs.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -22,6 +24,11 @@ tabs.forEach((btn) => {
     btn.classList.add("active");
     document.getElementById(btn.dataset.tab).classList.add("active");
   });
+});
+
+searchInput.addEventListener("input", (event) => {
+  busquedaAlumno = event.target.value.trim().toLowerCase();
+  renderTabla();
 });
 
 document.getElementById("form-carrera").addEventListener("submit", (e) => {
@@ -173,22 +180,45 @@ function renderTabla() {
 
   if (!state.alumnos.length) {
     const tr = document.createElement("tr");
-    tr.innerHTML = '<td colspan="3" class="empty">No hay alumnos registrados.</td>';
+    tr.innerHTML = '<td colspan="4" class="empty">No hay alumnos registrados.</td>';
     tbody.appendChild(tr);
     return;
   }
 
-  state.alumnos.forEach((alumno) => {
-    const anioId = state.anioPorAlumno[alumno.id];
-    const anio = byId(state.anios, anioId);
-    const carreraId = anio ? state.carreraPorAnio[anio.id] : null;
-    const carrera = byId(state.carreras, carreraId);
+  const filas = state.alumnos
+    .map((alumno) => {
+      const anioId = state.anioPorAlumno[alumno.id];
+      const anio = byId(state.anios, anioId);
+      const carreraId = anio ? state.carreraPorAnio[anio.id] : null;
+      const carrera = byId(state.carreras, carreraId);
 
+      return {
+        alumno,
+        carrera: carrera ? carrera.nombre : "No asignada",
+        anio: anio ? anio.nombre : "No asignado",
+      };
+    })
+    .filter((fila) => {
+      if (!busquedaAlumno) return true;
+
+      const texto = `${fila.alumno.nombre} ${fila.alumno.apellido} ${fila.alumno.codigo} ${fila.carrera} ${fila.anio}`.toLowerCase();
+      return texto.includes(busquedaAlumno);
+    });
+
+  if (!filas.length) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = '<td colspan="4" class="empty">No se encontraron estudiantes para esa búsqueda.</td>';
+    tbody.appendChild(tr);
+    return;
+  }
+
+  filas.forEach((fila) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${alumno.nombre} ${alumno.apellido}</td>
-      <td>${carrera ? carrera.nombre : "No asignada"}</td>
-      <td>${anio ? anio.nombre : "No asignado"}</td>
+      <td>${fila.alumno.nombre} ${fila.alumno.apellido}</td>
+      <td>${fila.alumno.codigo}</td>
+      <td>${fila.carrera}</td>
+      <td>${fila.anio}</td>
     `;
     tbody.appendChild(tr);
   });
