@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema Académico Local</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css"/>
+  </head>
+  <body>
+    <header>
+      <h1>Sistema Académico de Estudiantes Local</h1>
+      <nav>
+        <button data-tab="configuracion" class="tab-btn active">Configuración</button>
+        <button data-tab="principal" class="tab-btn">Principal</button>
+      </nav>
+    </header>
+    
+    <main>
+      <section id="configuracion" class="tab active">
+        <h2>Configuración</h2>
+        <p>Registra carrera, clases, año escolar y alumnos.</p>
+
+        <div class="grid">
+          <article class="card">
+            <h3>Carreras</h3>
+            <form id="form-carrera">
+              <input id="carrera-nombre" type="text" placeholder="Nombre de la carrera" required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul id="lista-carreras"></ul>
+          </article>
+
+          <article class="card">
+            <h3>Años escolares</h3>
+            <form id="form-anio">
+              <input id="anio-nombre" type="text" placeholder="Ej: 1ro, 2do" required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul id="lista-anios"></ul>
+          </article>
+
+          <article class="card">
+            <h3>Clases</h3>
+            <form id="form-clase">
+              <input id="clase-nombre" type="text" placeholder="Nombre de la clase" required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul id="lista-clases"></ul>
+          </article>
+
+          <article class="card">
+            <h3>Alumnos</h3>
+            <form id="form-alumno">
+              <input id="alumno-nombre" type="text" placeholder="Nombre" required />
+              <input id="alumno-apellido" type="text" placeholder="Apellido" required />
+              <input id="alumno-id" type="text" placeholder="Documento / código" required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul id="lista-alumnos"></ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="principal" class="tab">
+        <h2>Principal</h2>
+        <p>Asocia carrera con año, año con clases y alumno con año.</p>
+
+        <div class="grid">
+          <article class="card">
+            <h3>Asociar carrera con año</h3>
+            <form id="form-carrera-anio">
+              <select id="select-carrera" required></select>
+              <select id="select-anio-carrera" required></select>
+              <button type="submit">Asociar</button>
+            </form>
+            <ul id="lista-carrera-anio"></ul>
+          </article>
+
+          <article class="card">
+            <h3>Asociar año con clases</h3>
+            <form id="form-anio-clase">
+              <select id="select-anio-clase" required></select>
+              <select id="select-clase" required></select>
+              <button type="submit">Asociar</button>
+            </form>
+            <ul id="lista-anio-clase"></ul>
+          </article>
+
+          <article class="card">
+            <h3>Asociar alumno con año</h3>
+            <form id="form-alumno-anio">
+              <select id="select-alumno" required></select>
+              <select id="select-anio-alumno" required></select>
+              <button type="submit">Asociar</button>
+            </form>
+            <ul id="lista-alumno-anio"></ul>
+          </article>
+        </div>
+
+        <article class="card">
+          <h3>Resumen de alumnos</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Alumno</th>
+                <th>Carrera</th>
+                <th>Año</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-alumnos"></tbody>
+          </table>
+        </article>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
