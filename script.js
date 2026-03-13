@@ -21,15 +21,18 @@ tabs.forEach((btn) => {
   btn.addEventListener("click", () => {
     tabs.forEach((b) => b.classList.remove("active"));
     sections.forEach((s) => s.classList.remove("active"));
+
     btn.classList.add("active");
     document.getElementById(btn.dataset.tab).classList.add("active");
   });
 });
 
-searchInput.addEventListener("input", (event) => {
-  busquedaAlumno = event.target.value.trim().toLowerCase();
-  renderTabla();
-});
+if (searchInput) {
+  searchInput.addEventListener("input", (event) => {
+    busquedaAlumno = event.target.value.trim().toLowerCase();
+    renderTabla();
+  });
+}
 
 document.getElementById("form-carrera").addEventListener("submit", (e) => {
   e.preventDefault();
@@ -57,6 +60,7 @@ document.getElementById("form-alumno").addEventListener("submit", (e) => {
   const nombre = valueOf("alumno-nombre");
   const apellido = valueOf("alumno-apellido");
   const codigo = valueOf("alumno-id");
+
   addItem("alumnos", { id: uid(), nombre, apellido, codigo });
   e.target.reset();
 });
@@ -65,8 +69,12 @@ document.getElementById("form-carrera-anio").addEventListener("submit", (e) => {
   e.preventDefault();
   const carreraId = valueOf("select-carrera");
   const anioId = valueOf("select-anio-carrera");
+
+  if (!carreraId || !anioId) return;
+
   state.carreraPorAnio[anioId] = carreraId;
-  persistAndRender();
+  persist();
+  renderAll();
 });
 
 document.getElementById("form-anio-clase").addEventListener("submit", (e) => {
@@ -74,73 +82,140 @@ document.getElementById("form-anio-clase").addEventListener("submit", (e) => {
   const anioId = valueOf("select-anio-clase");
   const claseId = valueOf("select-clase");
 
+  if (!anioId || !claseId) return;
+
   if (!state.clasesPorAnio[anioId]) {
     state.clasesPorAnio[anioId] = [];
   }
 
   if (!state.clasesPorAnio[anioId].includes(claseId)) {
     state.clasesPorAnio[anioId].push(claseId);
-    persistAndRender();
   }
+
+  persist();
+  renderAll();
 });
 
 document.getElementById("form-alumno-anio").addEventListener("submit", (e) => {
   e.preventDefault();
   const alumnoId = valueOf("select-alumno");
   const anioId = valueOf("select-anio-alumno");
+
+  if (!alumnoId || !anioId) return;
+
   state.anioPorAlumno[alumnoId] = anioId;
-  persistAndRender();
+  persist();
+  renderAll();
 });
 
-function addItem(collection, item) {
-  state[collection].push(item);
-  persistAndRender();
-}
-
-function persistAndRender() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  render();
-}
-
 function loadState() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return structuredClone(defaultState);
-  }
-
   try {
-    return { ...structuredClone(defaultState), ...JSON.parse(raw) };
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return structuredClone(defaultState);
+
+    const parsed = JSON.parse(raw);
+    return {
+      ...structuredClone(defaultState),
+      ...parsed,
+      carreraPorAnio: parsed.carreraPorAnio || {},
+      clasesPorAnio: parsed.clasesPorAnio || {},
+      anioPorAlumno: parsed.anioPorAlumno || {},
+    };
   } catch {
     return structuredClone(defaultState);
   }
 }
 
-function render() {
-  renderSimpleList("lista-carreras", state.carreras, (i) => i.nombre);
-  renderSimpleList("lista-anios", state.anios, (i) => i.nombre);
-  renderSimpleList("lista-clases", state.clases, (i) => i.nombre);
+function persist() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function uid() {
+  return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function valueOf(id) {
+  return document.getElementById(id).value.trim();
+}
+
+function addItem(key, item) {
+  state[key].push(item);
+  persist();
+  renderAll();
+}
+
+function byId(list, id) {
+  return list.find((item) => item.id === id);
+}
+
+function fillSelect(id, items, placeholder, labelFn = (i) => i.nombre) {
+  const select = document.getElementById(id);
+  const previousValue = select.value;
+
+  select.innerHTML = `<option value="">${placeholder}</option>`;
+
+  items.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = labelFn(item);
+    select.appendChild(option);
+  });
+
+  if (items.some((item) => item.id === previousValue)) {
+    select.value = previousValue;
+  }
+}
+
+function renderTextList(id, lines, emptyText = "Sin registros") {
+  const ul = document.getElementById(id);
+  ul.innerHTML = "";
+
+  if (!lines.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = emptyText;
+    ul.appendChild(li);
+    return;
+  }
+
+  lines.forEach((line) => {
+    const li = document.createElement("li");
+    li.textContent = line;
+    ul.appendChild(li);
+  });
+}
+
+function renderSimpleList(id, items, labelFn) {
+  renderTextList(
+    id,
+    items.map(labelFn),
+    "Sin registros"
+  );
+}
+
+function renderCarreras() {
+  renderSimpleList("lista-carreras", state.carreras, (item) => item.nombre);
+}
+
+function renderAnios() {
+  renderSimpleList("lista-anios", state.anios, (item) => item.nombre);
+}
+
+function renderClases() {
+  renderSimpleList("lista-clases", state.clases, (item) => item.nombre);
+}
+
+function renderAlumnos() {
   renderSimpleList(
     "lista-alumnos",
     state.alumnos,
-    (i) => `${i.nombre} ${i.apellido} (${i.codigo})`
+    (item) => `${item.nombre} ${item.apellido} — ${item.codigo}`
   );
-
-  fillSelect("select-carrera", state.carreras, "Seleccione carrera");
-  fillSelect("select-anio-carrera", state.anios, "Seleccione año");
-  fillSelect("select-anio-clase", state.anios, "Seleccione año");
-  fillSelect("select-clase", state.clases, "Seleccione clase");
-  fillSelect("select-alumno", state.alumnos, "Seleccione alumno", (a) => `${a.nombre} ${a.apellido}`);
-  fillSelect("select-anio-alumno", state.anios, "Seleccione año");
-
-  renderCarreraAnio();
-  renderAnioClase();
-  renderAlumnoAnio();
-  renderTabla();
 }
 
 function renderCarreraAnio() {
   const lines = state.anios
-    .filter((a) => state.carreraPorAnio[a.id])
+    .filter((anio) => state.carreraPorAnio[anio.id])
     .map((anio) => {
       const carrera = byId(state.carreras, state.carreraPorAnio[anio.id]);
       return `${anio.nombre}: ${carrera ? carrera.nombre : "Sin carrera"}`;
@@ -151,12 +226,13 @@ function renderCarreraAnio() {
 
 function renderAnioClase() {
   const lines = state.anios
-    .filter((a) => state.clasesPorAnio[a.id]?.length)
+    .filter((anio) => (state.clasesPorAnio[anio.id] || []).length)
     .map((anio) => {
-      const nombresClases = state.clasesPorAnio[anio.id]
-        .map((id) => byId(state.clases, id)?.nombre)
+      const nombresClases = (state.clasesPorAnio[anio.id] || [])
+        .map((claseId) => byId(state.clases, claseId)?.nombre)
         .filter(Boolean)
         .join(", ");
+
       return `${anio.nombre}: ${nombresClases}`;
     });
 
@@ -165,7 +241,7 @@ function renderAnioClase() {
 
 function renderAlumnoAnio() {
   const lines = state.alumnos
-    .filter((a) => state.anioPorAlumno[a.id])
+    .filter((alumno) => state.anioPorAlumno[alumno.id])
     .map((alumno) => {
       const anio = byId(state.anios, state.anioPorAlumno[alumno.id]);
       return `${alumno.nombre} ${alumno.apellido}: ${anio ? anio.nombre : "Sin año"}`;
@@ -180,7 +256,7 @@ function renderTabla() {
 
   if (!state.alumnos.length) {
     const tr = document.createElement("tr");
-    tr.innerHTML = '<td colspan="4" class="empty">No hay alumnos registrados.</td>';
+    tr.innerHTML = '<td colspan="4" class="empty">No hay estudiantes registrados.</td>';
     tbody.appendChild(tr);
     return;
   }
@@ -224,58 +300,30 @@ function renderTabla() {
   });
 }
 
-function fillSelect(id, items, placeholder, labelFn = (i) => i.nombre) {
-  const select = document.getElementById(id);
-  const previousValue = select.value;
-
-  select.innerHTML = `<option value="">${placeholder}</option>`;
-
-  items.forEach((item) => {
-    const option = document.createElement("option");
-    option.value = item.id;
-    option.textContent = labelFn(item);
-    select.appendChild(option);
-  });
-
-  if (items.some((item) => item.id === previousValue)) {
-    select.value = previousValue;
-  }
+function renderSelects() {
+  fillSelect("select-carrera", state.carreras, "Selecciona una carrera");
+  fillSelect("select-anio-carrera", state.anios, "Selecciona un año");
+  fillSelect("select-anio-clase", state.anios, "Selecciona un año");
+  fillSelect("select-clase", state.clases, "Selecciona una clase");
+  fillSelect(
+    "select-alumno",
+    state.alumnos,
+    "Selecciona un estudiante",
+    (a) => `${a.nombre} ${a.apellido} — ${a.codigo}`
+  );
+  fillSelect("select-anio-alumno", state.anios, "Selecciona un año");
 }
 
-function renderSimpleList(id, items, labelFn) {
-  const lines = items.map(labelFn);
-  renderTextList(id, lines, "Sin registros");
+function renderAll() {
+  renderCarreras();
+  renderAnios();
+  renderClases();
+  renderAlumnos();
+  renderCarreraAnio();
+  renderAnioClase();
+  renderAlumnoAnio();
+  renderTabla();
+  renderSelects();
 }
 
-function renderTextList(id, lines, emptyText) {
-  const ul = document.getElementById(id);
-  ul.innerHTML = "";
-
-  if (!lines.length) {
-    const li = document.createElement("li");
-    li.className = "empty";
-    li.textContent = emptyText;
-    ul.appendChild(li);
-    return;
-  }
-
-  lines.forEach((line) => {
-    const li = document.createElement("li");
-    li.textContent = line;
-    ul.appendChild(li);
-  });
-}
-
-function byId(collection, id) {
-  return collection.find((item) => item.id === id) || null;
-}
-
-function valueOf(id) {
-  return document.getElementById(id).value.trim();
-}
-
-function uid() {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-render();
+renderAll();
